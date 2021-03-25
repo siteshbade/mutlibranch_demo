@@ -1,40 +1,28 @@
-node{
-	
-
-   def tomcatWeb = 'C:\\opt\\apache-tomcat-8.5.64\\webapps'
-   def tomcatBin = 'C:\\opt\\apache-tomcat-8.5.64\\bin'
-   def tomcatStatus = ''
-   
-   
-   
-   
-   stage('SCM Checkout'){
-     git 'https://github.com/siteshbade/webAppExample.git'
+node {
+   def mvnHome
+   stage('getscm') { // for display purposes
+      // Get some code from a GitHub repository
+      git 'https://github.com/ybmadhu/spring3-mv...​
+      // Get the Maven tool.
+      // ** NOTE: This 'M3' Maven tool must be configured
+      // **       in the global configuration.           
+      mvnHome = tool 'M3'
    }
-   stage('Compile-Package-create-war-file'){
-      // Get maven home path
-      def mvnHome =  tool name: 'MAVEN_HOME', type: 'maven'   
-      bat "${mvnHome}/bin/mvn package sonar:sonar"
+   stage('Build') {
+      // Run the maven build
+      if (isUnix()) {
+         sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean package"
+      } else {
+      echo 'this is build maven artifact'
+         bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean package/)
       }
-   stage ('Stop Tomcat Server') {
-               bat ''' @ECHO OFF
-               wmic process list brief | find /i "tomcat" > NUL
-               IF ERRORLEVEL 1 (
-                    echo  Stopped
-               ) ELSE (
-               echo running
-                  "${tomcatBin}\\shutdown.bat"
-                  sleep(time:10,unit:"SECONDS") 
-               )
-'''
    }
-   stage('Deploy to Tomcat'){
-     bat "copy target\\webAppExample.war \"${tomcatWeb}\\webAppExample.war\""
+    stage('artifact') {
+      
+      archive 'target/*.war'
    }
-      stage ('Start Tomcat Server') {
-         sleep(time:5,unit:"SECONDS") 
-         bat "${tomcatBin}\\startup.bat"
-         sleep(time:100,unit:"SECONDS")
+   stage ('deploy'){
+   echo 'deployment started'
+       bat '''copy http://18.222.148.118:8085:\\Users\\Madhu\\.jenkins\\workspace\\kelly_pipeline_java_maven\\target\\*.war http://18.222.148.118:8085\\opt\\tomcat\\webapps\\'''
    }
-   
 }
